@@ -179,7 +179,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContainerLocationResultModel'
+                $ref: '#/components/schemas/ContainerLocationResponse'
               example: 
                 IsCoordinateError: false
                 CoordinateErrorDescription: 
@@ -502,7 +502,7 @@ components:
         TimeZone:
           type: string
           description: Time zone of the delivery period
-    ContainerLocationResultModel:
+    ContainerLocationResponse:
       type: object
       properties:
         IsCoordinateError:
@@ -511,9 +511,11 @@ components:
         CoordinateErrorDescription:
           type: string
           description: Description of the error if any or why current coordinates could not be returned.
-        ContainerLocation:
-          $ref: '#/components/schemas/ContainerLocationModel'
-    ContainerLocationModel:
+        JobLocation:
+          description: A model containing information specifically about the coordinates and location of the container
+          type: JobLocation
+          $ref: '#/components/schemas/JobLocation'
+    JobLocation:
       type: object
       properties:
         LastLatitude:
