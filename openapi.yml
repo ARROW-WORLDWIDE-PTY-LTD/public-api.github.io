@@ -1,0 +1,589 @@
+openapi: 3.0.1
+info:
+  title: AOS Technologies OpenAPI Specification
+  description: API endpoints supplied by AOS for getting detailed Port Logistics information.
+  version: v0.3
+servers:
+  - url: https://api-staging.aostechnologies.com.au/transport
+  - url: https://api.aostechnologies.com.au/transport
+tags:
+  - name: Production
+    description: Features now live in production environment.
+  - name: UAT
+    description: Features that are currently in beta and only available for testing in UAT.
+paths:
+  /availability:
+    get:
+      tags: 
+        - Production
+      summary: Find Available Delivery Periods
+      description: |
+        Request a list of available delivery windows based on date range, trailer type, port and whether delivery is time-sensitive or not (ie. 30 minutes before or after the specified delivery window start).
+        
+        A delivery window is a range with a start time and an end time.  Eg. 07:00 - 07:59.  Delivery windows may vary based on Port and time of day, eg. Brisbane has a Delivery Window for 00:00 - 03:59.
+        
+        When sending an EDI message with a datetime, the datetime is allowed to be set anywhere within the window as long as there are available times.  Eg. if 07:00 - 07:59 has availability, you can in-turn request a delivery date time of 07:30.
+        
+        Note. The maximum date range is 7 days and if no dates are not set, it will default to today's date and the next 7 days.
+        
+        All date times sent and returned must be LOCAL time for the given Australian State where the port is located.  No UTC offset should be given.
+        
+        Response messages will take into account the transporter's delivery cut off rules.  For example, if requesting today at 3pm for availability starting from the next business, no response data for that day will be sent if the transporter's cut-off rule is set to 1pm.
+      operationId: findAvailableDeliveryPeriods
+      parameters:
+        - name: PortCode
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL]
+          description: Code of the port. 
+        - name: TrailerType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [sideloader, standard, tautliner]
+          description: Type of the trailer
+        - name: IsTimeSensitive
+          in: query
+          required: true
+          schema:
+            type: boolean
+          description: Indicates if the delivery is time-sensitive
+        - name: MinimumDateToFilter
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Minimum date to filter (default is today)
+          example: "2024-05-16T00:00:00"
+        - name: MaximumDateToFilter
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Maximum date to filter (default is 7 days from today)
+          example: "2024-05-23T00:00:00"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryPeriodAvailable'
+              example:
+                - dateLocal: "2024-05-16T00:00:00"
+                  dateTimeWindowStartLocal: "2024-05-16T04:00:00"
+                  dateTimeWindowEndLocal: "2024-05-16T05:59:00"
+                  timeZone: "AEST"
+                  isTimeSensitive: true
+                  availableCount: 5
+                - dateLocal: "2024-05-16T00:00:00"
+                  dateTimeWindowStartLocal: "2024-05-16T09:00:00"
+                  dateTimeWindowEndLocal: "2024-05-16T09:59:00"
+                  timeZone: "AEST"
+                  isTimeSensitive: true
+                  availableCount: 22
+                - dateLocal: "2024-05-17T00:00:00"
+                  dateTimeWindowStartLocal: "2024-05-17T00:00:00"
+                  dateTimeWindowEndLocal: "2024-05-17T03:59:59"
+                  timeZone: "AEST"
+                  isTimeSensitive: true
+                  availableCount: 1
+        '202':
+          description: Accepted - Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingPortCode:
+                  summary: No Availability
+                  value: { Message: "No availabile delivery windows found for the selected request." }
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingPortCode:
+                  summary: Missing PortCode
+                  value: { Message: "PortCode value is required." }
+                InvalidDateRange:
+                  summary: Invalid Date Range
+                  value: { Message: "Maximum filter date cannot be prior to Minimum filter date." }
+                InvalidTrailerType:
+                  summary: Invalid Trailer Type
+                  value: { Message: "Trailer Type XYZ is not valid, please specify standard, sideloader, or tautliner." }
+                MissingCustomerConfiguration:
+                  summary: Missing Customer Configuration
+                  value: { Message: "Customer not configured for this account, please contact support." }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Unauthorized:
+                  summary: Unauthorized Access
+                  value: { Message: "User is not authorized." }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ServerError:
+                  summary: Server Error
+                  value: { Message: "There was an error processing this request, please contact support." }
+      security:
+        - bearerAuth: []
+  /containerlocation:
+    get:
+      tags: 
+        - Production
+      summary: Get Container location details
+      description: | 
+        Request the last reported latitude and longitude of a container as a well as a brief description of its current status.
+        Will return IsCoordinateError of true if there were any issues obtaining a current coordinate.  If this occurs, AOS will try to return the last known location and will also provide information under ErrorDescriptiopn.
+      operationId: getContainerLocation
+      parameters:
+        - name: PortCode
+          in: query
+          required: true
+          schema:
+            type: string
+            example: AUBNE
+            maxLength: 5
+            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL]
+          description: Code of the port.
+        - name: ContainerNumber
+          in: query
+          required: true
+          schema:
+            type: string
+            example: ABCD1234567
+            maxLength: 11
+          description: string representing the full Container Number.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerLocationResultModel'
+              example: 
+                IsCoordinateError: false
+                CoordinateErrorDescription: 
+                ContainerLocation:
+                  lastLatitude: 153.119799
+                  lastLongitude: -27.536581
+                  status: In Transit to MEDLOG
+                  isEmpty: true
+                  isCompleted: false
+        '202':
+          description: Accepted - Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingPortCode:
+                  summary: Not Found
+                  value: { Message: "Container not found." }
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingPortCode:
+                  summary: Missing PortCode
+                  value: { Message: "PortCode value is required." }
+                InvalidDateRange:
+                  summary: Invalid input for Container Number
+                  value: { Message: "Container number must be a valid string with alphanumerical characters." }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Unauthorized:
+                  summary: Unauthorized Access
+                  value: { Message: "User is not authorized." }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ServerError:
+                  summary: Server Error
+                  value: { Message: "There was an error processing this request, please contact support." }
+      security:
+        - bearerAuth: []
+  /ratecalculator:
+    get:
+      tags: 
+        - UAT
+      summary: Get Rate Calculator Transport Estimate
+      description: |
+        Request rates / pricing for FCL Container Transport based on information about the container, shipment, delivery location and mode.
+
+        You must supply all mandatory fields in order to generate a result.  No container size needs to be provided as by default, the endpoint will return rates for both 20 foot and 40 foot containers.
+      operationId: getRateCalculatorTransportEstimate
+      parameters:
+        - name: PortCode
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL]
+            maxLength: 5
+          description: Code of the port of final destination (import) or loading (export). 
+        - name: TransportDeliveryMethod
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [sideloader drop, sideloader wait, standard, drop trail, drop off]
+          description: A value that represents the type of equipment to be used and the drop mode.
+        - name: JobType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [import, export]
+          description: The type of shipment relative to Australia
+        - name: SuburbName
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The full suburb name - including spaces - of the final delivery address or the pickup/loading address
+          example: "acacia ridge"
+        - name: PostCode
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 4
+          description: The 4-digit Australian post code for the suburb given above
+          example: "4110"
+        - name: GrossWeight
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20000
+          description: The expected gross laden weight of the shipping container and all
+          example: 27000
+        - name: IsRefrigerated
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Indicates whether or not the cargo is temperature sensitive in a refrigerated shipping container that requires power and monitoring while in Arrow's
+          example: true
+        - name: IsHazardous
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Indicates whether or not the cargo is considered hazardous or dangerous goods under the Australian Dangerous Goods code.
+          example: true
+      responses:
+        200:
+          description: Successful response containing rate items and conditions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rateItems:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        appliesToContainerSize:
+                          type: string
+                          example: "20"
+                        chargeName:
+                          type: string
+                          example: "Empty container booking fee"
+                        chargeDescription:
+                          type: string
+                          nullable: true
+                          example: null
+                        price:
+                          type: number
+                          format: double
+                          example: 159.0
+                        quantity:
+                          type: number
+                          format: double
+                          example: 1.0
+                        amountExTax:
+                          type: number
+                          format: double
+                          example: 159.0
+                        taxAmount:
+                          type: number
+                          format: double
+                          example: 15.9
+                  conditions:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - "All services and quotations provided by Arrow Worldwide Pty Ltd (A.C.N. 151 498 798), Arrow (NSW) Pty Ltd (A.C.N. 635 631 042)..."
+                      - "Pricing shown is indicative based on information provided. It may not include all relevant charges or ancillaries that may apply depending on your situation."
+              example:
+                value:
+                  rateItems:
+                    - appliesToContainerSize: "20"
+                      chargeName: "Empty container booking fee"
+                      chargeDescription: null
+                      price: 150.0
+                      quantity: 1.0
+                      amountExTax: 150.0
+                      taxAmount: 15.0
+                    - appliesToContainerSize: "40"
+                      chargeName: "Empty container booking fee"
+                      chargeDescription: null
+                      price: 150.0
+                      quantity: 1.0
+                      amountExTax: 150.0
+                      taxAmount: 15.0
+                    - appliesToContainerSize: "20"
+                      chargeName: "Drop Trailer"
+                      chargeDescription: null
+                      price: 150.0
+                      quantity: 1.0
+                      amountExTax: 150.0
+                      taxAmount: 15.0
+                    - appliesToContainerSize: "40"
+                      chargeName: "Drop Trailer"
+                      chargeDescription: null
+                      price: 150.0
+                      quantity: 1.0
+                      amountExTax: 150.0
+                      taxAmount: 15.0
+                    - appliesToContainerSize: "20"
+                      chargeName: "Cartage"
+                      chargeDescription: null
+                      price: 300.0
+                      quantity: 1.0
+                      amountExTax: 172.0
+                      taxAmount: 17.2
+                    - appliesToContainerSize: "40"
+                      chargeName: "Cartage"
+                      chargeDescription: null
+                      price: 350.0
+                      quantity: 1.0
+                      amountExTax: 172.0
+                      taxAmount: 17.2
+                    - appliesToContainerSize: "20"
+                      chargeName: "Fuel Surcharge"
+                      chargeDescription: "Total applicable items $450 @ 25%"
+                      price: 450.0
+                      quantity: 0.25
+                      amountExTax: 112.50
+                      taxAmount: 11.25
+                    - appliesToContainerSize: "40"
+                      chargeName: "Fuel Surcharge"
+                      chargeDescription: "Total applicable items $500 @ 25%"
+                      price: 500.0
+                      quantity: 0.25
+                      amountExTax: 125.0
+                      taxAmount: 12.5
+                  conditions:
+                    - "All services and quotations provided by Arrow Worldwide Pty Ltd."
+                    - "Terminal Infrastructure Fee is subject to industry adjustment."
+        '202':
+          description: Accepted - Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingPortCode:
+                  summary: No Rates
+                  value: { Message: "No transport rate could be found for the given parameters, please contact your sales team for a price." }
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingPortCode:
+                  summary: Missing PortCode
+                  value: { Message: "PortCode value is required." }
+                InvalidPortCode:
+                  summary: Invalid PortCode
+                  value: { Message: "PortCode AUZZZ not found in available service areas." }
+                MissingJobType:
+                  summary: Missing JobType
+                  value: { Message: "JobType value is required." }
+                InvalidJobType:
+                  summary: Invalid JobType
+                  value: { Message: "JobType xyz not found.  Please use import or export." }
+                InvalidSuburbPostCode:
+                  summary: Suburb Postcode not found
+                  value: { Message: "Suburb with value ABCDEF and post code 9999 not found." }
+                InvalidTransportDeliveryMethod:
+                  summary: Transport Delivery Method not found
+                  value: { Message: "TransportDeliveryMethod WAGON not found.  Please use sideloader drop, sideloader wait, standard, drop trail or drop off" }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Unauthorized:
+                  summary: Unauthorized Access
+                  value: { Message: "User is not authorized." }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ServerError:
+                  summary: Server Error
+                  value: { Message: "An internal error has occurred, please contact support" }
+      security:
+        - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    DeliveryPeriodAvailable:
+      type: object
+      properties:
+        AvailableCount:
+          type: integer
+          description: Number of available delivery periods
+        DateLocal:
+          type: string
+          format: date-time
+          description: Local date of the delivery period
+        IsTimeSensitive:
+          type: boolean
+          description: Indicates if the delivery period is time-sensitive
+        DateTimeWindowStartLocal:
+          type: string
+          format: date-time
+          description: Start time of the delivery period in local time
+        DateTimeWindowEndLocal:
+          type: string
+          format: date-time
+          description: End time of the delivery period in local time
+        TimeZone:
+          type: string
+          description: Time zone of the delivery period
+    ContainerLocationResultModel:
+      type: object
+      properties:
+        IsCoordinateError:
+          type: boolean
+          description: Indicates if an error occurred or if there was an error fetching coordinates.
+        CoordinateErrorDescription:
+          type: string
+          description: Description of the error if any or why current coordinates could not be returned.
+        ContainerLocation:
+          $ref: '#/components/schemas/ContainerLocationModel'
+    ContainerLocationModel:
+      type: object
+      properties:
+        LastLatitude:
+          type: number
+          format: double
+          nullable: true
+          description: Last known latitude of the job location.
+        LastLongitude:
+          type: number
+          format: double
+          nullable: true
+          description: Last known longitude of the job location.
+        Status:
+          type: string
+          description: Current status of the job location.  Often with say "At" or "In Transit To" followed by the name of the current or destination location's name.  If Import container's vessel has not arrived at port, will return "On Water".
+        IsEmpty:
+          type: boolean
+          nullable: true
+          description: Indicates if the container is currently (or was last) empty.
+        IsCompleted:
+          type: boolean
+          nullable: true
+          description: Indicates if all transport movements for the given container have been completed.
+    RateCalculator:
+      type: object
+      properties:
+        RateItems:
+          type: array
+          description: a collection of rate items / prices for both 20 foot and 40 foot containers
+          items:
+            $ref: '#/components/schemas/RateItem'
+        Conditions:
+          type: array
+          description: a collection of important terms and conditions that apply to all rates/pricing
+          items:
+            type: string
+    RateItem:
+      type: object
+      properties:
+        AppliesToContainerSize:
+          type: string
+          example: 20
+          description: The container size (length) that this rate item applies to
+        ChargeName:
+          type: string
+          example: 
+          description: The name of the charge / billing item
+        ChargeDescription:
+          type: string
+          example: 
+          description: Additional information about the value itself eg. fuel surcharge basis
+        Price:
+          type: number
+          example: 
+          description: The tax-exclusive base price of the item
+        Quantity:
+          type: number
+          example: 
+          description: The quantity to be applied to the price
+        AmountExTax:
+          type: number
+          example: 
+          description: Total line item amount price x quantity
+        TaxAmount:
+          type: number
+          example: 
+          description: The total tax amount applicable in addition to the AmountExTax
+    ErrorResponse:
+      type: object
+      properties:
+        Message:
+          type: string
+          description: Error message
