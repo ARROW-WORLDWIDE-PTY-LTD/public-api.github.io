@@ -3,9 +3,6 @@ info:
   title: AOS Technologies OpenAPI Specification
   description: API endpoints supplied by AOS for getting detailed Port Logistics information.
   version: v0.3
-servers:
-  - url: https://api-staging.aostechnologies.com.au/transport
-  - url: https://api.aostechnologies.com.au/transport
 tags:
   - name: Production
     description: Features now live in production environment.
