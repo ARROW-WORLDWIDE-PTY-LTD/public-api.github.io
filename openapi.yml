@@ -234,7 +234,7 @@ paths:
   /ratecalculator:
     get:
       tags: 
-        - UAT
+        - Production
       summary: Get Rate Calculator Transport Estimate
       description: |
         Request rates / pricing for FCL Container Transport based on information about the container, shipment, delivery location and mode.
@@ -242,6 +242,14 @@ paths:
         You must supply all mandatory fields in order to generate a result.  No container size needs to be provided as by default, the endpoint will return rates for both 20 foot and 40 foot containers.
       operationId: getRateCalculatorTransportEstimate
       parameters:
+        - name: WorkDate
+          in: query
+          required: true
+          schema:
+            type: date
+            maxLength: 8
+          description: The date when you expect the first job/work to commence to ensure correct rates are selected based on validity dates.
+          example: "2025-12-25"
         - name: PortCode
           in: query
           required: true
