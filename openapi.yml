@@ -1,19 +1,255 @@
 openapi: 3.0.1
 info:
   title: AOS Technologies OpenAPI Specification
-  description: API endpoints supplied by AOS for getting detailed Port Logistics information.
-  version: v0.3
+  description: 
+    API endpoints supplied by AOS for getting detailed Port Logistics information.  
+    URLs, credentials and other information can be requested from aoshelpdesk@arrowtransport.com.au for any approved account customers.
+    Rate limits apply on a per-account basis of 30 requests per minute across all endpoints.
+  version: v0.9
 tags:
-  - name: Production
-    description: Features now live in production environment.
-  - name: UAT
-    description: Features that are currently in beta and only available for testing in UAT.
+  - name: Container Information
+    description: Retrieve information about containers (location, status)
+  - name: Container Scheduling
+    description: Schedule container movements (delivery, pickup, empty notifications)
+  - name: Billing & Pricing
+    description: Calculate transport rates and pricing estimates
 paths:
-  /availability:
+  /container/details:
     get:
-      tags: 
-        - Production
-      summary: Find Available Delivery Periods
+      tags:
+        - Container Information
+      x-environment: production
+      summary: "[UAT] Get Container Job Details"
+      description: |
+        Request comprehensive information about a container and its associated job, including:
+        - Container details (number, type, size, weight, cargo)
+        - Job and order information
+        - Customer and shipping details
+        - Location information (client, wharf, yard)
+        - Milestones and important dates
+        - Transport legs and transport status
+        - Information about CFS jobs (pack or unpack)
+        - Quarantine status and history information
+
+        This endpoint provides a user-friendly view of container and job data designed for external customer consumption.
+      operationId: getContainerJob
+      parameters:
+        - name: ContainerNumber
+          in: query
+          required: true
+          schema:
+            type: string
+            example: ABCD1234567
+            maxLength: 11
+          description: Full container number
+        - name: PortCode
+          in: query
+          required: true
+          schema:
+            type: string
+            example: AUBNE
+            maxLength: 5
+            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL]
+          description: Code of the port of operation where the container job is initiated in Australia/NZ.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerJob'
+              example:
+                containerDetails:
+                  containerNumber: "ABCD1234567"
+                  containerSize: "40ft"
+                  isRefrigerated: false
+                  temperature: null
+                  isHazardous: false
+                  grossWeight: 25000
+                  tareWeight: 2300
+                  sealNumber: "SEAL123456"
+                  shippingCompanyOperator: "Maersk"
+                jobType: "Import"
+                arrowOrderNumber: "ORD-2025-001"
+                transportStatus: "In Transit"
+                customerName: "ABC Company Pty Ltd"
+                customerReference: "CUST-REF-001"
+                billOfLading: "BOL-123456"
+                releaseNumber: "REL-789"
+                poNumber: "PO-2025-456"
+                ediContainerReference: "EDI-REF-001"
+                vesselVoyageIn:
+                  name: "MAERSK ESSEX"
+                  imo: "IMO1234567"
+                  voyage: "025N"
+                  estimatedArrival: "2025-12-10T14:30:00"
+                  estimatedDeparture: null
+                  loadPort: "CNSHA"
+                  dischargePort: "AUBNE"
+                  inVoyage: "025N"
+                  outVoyage: ""
+                vesselVoyageOut: null
+                portCode: "AUBNE"
+                portName: "Brisbane"
+                branchName: "Brisbane Branch"
+                timeZoneId: "Australia/Brisbane"
+                clientLocation:
+                  name: "ABC Warehouse"
+                  address: "123 Industrial Drive"
+                  suburb: "Acacia Ridge"
+                  state: "Queensland"
+                  postcode: "4110"
+                  locationType: "Client"
+                  latitude: -27.586
+                  longitude: 153.025
+                  zone: "Zone 1"
+                milestones:
+                  dateCreated: "2025-12-01T08:00:00"
+                  slotDate: "2025-12-15T09:00:00"
+                  dateSlotBooked: "2025-12-08T14:30:00"
+                  dateEdoAttached: "2025-12-09T10:00:00"
+                  praLodgedDate: "2025-12-08T12:00:00"
+                  dischargeDate: "2025-12-10T14:30:00"
+                  preferredDeliveryDate: "2025-12-15T09:00:00"
+                  deliveredToClientDate: "2025-12-15T09:30:00"
+                  pickedUpFromClientDate: null
+                  deliveredToWharfDate: null
+                  pickedUpFromWharfDate: "2025-12-11T07:00:00"
+                  pickedUpFromEmptyParkDate: null
+                  deliverdToEmptyParkDate: null
+                  preferredPickupDate: null
+                  emptyNotifiedDate: null
+                  emptyAvailableDate: null
+                  detentionStart: "2025-12-17T00:00:00"
+                  firstInYardDate: "2025-12-10T15:45:00"
+                  yardStorageStartDate: "2025-12-10T15:45:00"
+                trailerType: "Sideloader"
+                transportDeliveryMethod: "Sideloader Drop"
+                timeSensitiveDelivery: true
+                timeSensitiveCollection: false
+                transportLegs:
+                  - sequence: 1
+                    status: "Completed"
+                    startLocation:
+                      name: "Patrick Terminal"
+                      address: "1 Wharf Street"
+                      suburb: "Fisherman Islands"
+                      state: "Queensland"
+                      postcode: "4178"
+                      locationType: "Wharf"
+                      latitude: -27.386
+                      longitude: 153.186
+                      zone: null
+                    endLocation:
+                      name: "ABC Warehouse"
+                      address: "123 Industrial Drive"
+                      suburb: "Acacia Ridge"
+                      state: "Queensland"
+                      postcode: "4110"
+                      locationType: "Client"
+                      latitude: -27.586
+                      longitude: 153.025
+                      zone: "Zone 1"
+                    startDate: "2025-12-11T07:00:00"
+                    endDate: "2025-12-11T09:30:00"
+                    ladenStatus: "Full"
+                    isFinished: true
+                cfsJobs:
+                  - type: "Unpack"
+                    status: "Completed"
+                    plannedDateTime: "2025-12-12T08:00:00"
+                    startedDateTime: "2025-12-12T08:15:00"
+                    endedDateTime: "2025-12-12T10:45:00"
+                    confirmedDateTime: "2025-12-12T10:50:00"
+                    cargoAvailableDate: "2025-12-12T11:00:00"
+                    laidDownDateTime: "2025-12-12T08:00:00"
+                    containerLocation: "CFS Bay 3"
+                    cargoHandlingType: "Manual Unpack"
+                    isCargoDamaged: false
+                    damages: null
+                    notes: "Standard unpack completed without issues"
+                quarantineJobs:
+                  - jobType: "Treatment"
+                    subType: "Fumigation"
+                    currentStatus: "Completed"
+                    estimatedTreatmentHours: 24
+                    actualTreatmentHours: 26
+                    quarantineSteps:
+                      - sequence: 1
+                        quarantineJobStep: "Inspection"
+                        bookedDate: "2025-12-11T14:00:00"
+                        completedDate: "2025-12-11T15:30:00"
+                      - sequence: 2
+                        quarantineJobStep: "Fumigation"
+                        bookedDate: "2025-12-11T14:00:00"
+                        completedDate: "2025-12-12T16:00:00"
+                      - sequence: 3
+                        quarantineJobStep: "Final Inspection"
+                        bookedDate: "2025-12-11T14:00:00"
+                        completedDate: "2025-12-12T17:00:00"
+        '202':
+          description: Accepted - Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ContainerNotFound:
+                  summary: Container Not Found
+                  value: { Message: "Container not found." }
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingContainer:
+                  summary: Missing Container Number
+                  value: { Message: "Container number is required." }
+                InvalidContainer:
+                  summary: Invalid Container Number
+                  value: { Message: "Container number is invalid." }
+                MissingPortCode:
+                  summary: Missing PortCode
+                  value: { Message: "PortCode value is required." }
+                InvalidPortCode:
+                  summary: Invalid PortCode
+                  value: { Message: "PortCode AUZZZ not found in available service areas." }
+                MultipleJobs:
+                  summary: Multiple Jobs Found
+                  value: { Message: "More than one job matches the provided container at this port." }
+                MissingCustomerConfiguration:
+                  summary: Missing Customer Configuration
+                  value: { Message: "Customer not configured for this account, please contact support." }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Unauthorized:
+                  summary: Unauthorized Access
+                  value: { Message: "User is not authorized." }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ServerError:
+                  summary: Server Error
+                  value: { Message: "There was an error processing this request, please contact support." }
+      security:
+        - bearerAuth: []
+  /container/schedule/availability:
+    get:
+      tags:
+        - Container Scheduling
+      x-environment: production
+      summary: "[Production] Find Available Delivery Periods"
       description: |
         Request a list of available delivery windows based on date range, trailer type, port and whether delivery is time-sensitive or not (ie. 30 minutes before or after the specified delivery window start).
         
@@ -33,14 +269,14 @@ paths:
           required: true
           schema:
             type: string
-            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL]
-          description: Code of the port. 
+            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL, AUTSV, AUDRW]
+          description: Code of the port of operation where the container job is initiated in Australia/NZ.
         - name: TrailerType
           in: query
           required: true
           schema:
             type: string
-            enum: [sideloader, standard, tautliner]
+            enum: [sideloader, standard]
           description: Type of the trailer
         - name: IsTimeSensitive
           in: query
@@ -143,11 +379,12 @@ paths:
                   value: { Message: "There was an error processing this request, please contact support." }
       security:
         - bearerAuth: []
-  /containerlocation:
+  /container/location:
     get:
-      tags: 
-        - Production
-      summary: Get Container location details
+      tags:
+        - Container Information
+      x-environment: production
+      summary: "[Production] Get Container Location Details"
       description: | 
         Request the last reported latitude and longitude of a container as a well as a brief description of its current status.
         Will return IsCoordinateError of true if there were any issues obtaining a current coordinate.  If this occurs, AOS will try to return the last known location and will also provide information under ErrorDescriptiopn.
@@ -184,7 +421,7 @@ paths:
                   lastLatitude: 153.119799
                   lastLongitude: -27.536581
                   status: In Transit to MEDLOG
-                  isEmpty: true
+                  ladenStatus: "Empty"
                   isCompleted: false
         '202':
           description: Accepted - Not Found
@@ -231,11 +468,413 @@ paths:
                   value: { Message: "There was an error processing this request, please contact support." }
       security:
         - bearerAuth: []
-  /ratecalculator:
+  /container/schedule/delivery:
+    post:
+      tags:
+        - Container Scheduling
+      x-environment: uat
+      summary: "[UAT] Book Container Delivery"
+      description: |
+        Submit a delivery booking request for an active container. This endpoint allows customers to specify their preferred delivery date and time for a container.
+
+        The container must be an active container associated with the authenticated user's customer account.
+
+        All date times must be provided in LOCAL time for the destination port/state. Do not include a UTC offset.
+
+        The system will validate that the requested delivery date/time is available based on delivery period availability rules.
+
+        If a delivery date has been supplied previously, it wll be OVERWRITTEN with this data.
+      operationId: postDeliveryBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryBookingRequest'
+            example:
+              container: "MSKU1234567"
+              portCode: "AUBNE"
+              preferredDeliveryDateTime: "2025-12-15T09:30:00"
+              isTimeSensitive: true
+      responses:
+        '204':
+          description: No Content - Delivery booking successfully processed
+        '202':
+          description: Accepted - Container Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ContainerNotFound:
+                  summary: Container Not Found
+                  value: { Message: "Container not found." }
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingContainer:
+                  summary: Missing Container
+                  value: { Message: "Container is required." }
+                InvalidContainer:
+                  summary: Invalid Container
+                  value: { Message: "Container is invalid." }
+                MissingPortCode:
+                  summary: Missing PortCode
+                  value: { Message: "PortCode value is required." }
+                InvalidPortCode:
+                  summary: Invalid PortCode
+                  value: { Message: "PortCode AUZZZ not found in available service areas." }
+                InvalidDateTime:
+                  summary: Invalid DateTime
+                  value: { Message: "PreferredDeliveryDateTime is invalid." }
+                DateInPast:
+                  summary: Date In Past
+                  value: { Message: "The requested delivery date cannot be in the past." }
+                AlreadyDelivered:
+                  summary: Container Already Delivered
+                  value: { Message: "The container has already been delivered." }
+                CutoffReached:
+                  summary: Delivery Cutoff Reached
+                  value: { Message: "The delivery cutoff time for this date has passed." }
+                NoAvailability:
+                  summary: No Delivery Availability
+                  value: { Message: "No delivery availability exists for the requested date and time." }
+                MultipleJobs:
+                  summary: Multiple Jobs Found
+                  value: { Message: "More than one job matches the provided container at this port." }
+                MissingCustomerConfiguration:
+                  summary: Missing Customer Configuration
+                  value: { Message: "Customer not configured for this account, please contact support." }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Unauthorized:
+                  summary: Unauthorized Access
+                  value: { Message: "User is not authorized." }
+        '409':
+          description: Conflict - Unable to update delivery booking
+        '500':
+          description: Internal Server Error
+      security:
+        - bearerAuth: []
+  /container/schedule/pickup-fcl:
+    post:
+      tags:
+        - Container Scheduling
+      x-environment: uat
+      summary: "[UAT] Request FCL Pickup"
+      description: |
+        Submit a Full Container Load (FCL) pickup request for an active export container. This endpoint allows customers to specify their preferred pickup date and time.
+
+        The container must be an active export container associated with the authenticated user's customer account.
+
+        All date times must be provided in LOCAL time for the destination port/state. Do not include a UTC offset.
+
+        If a pickup date has been supplied previously, it wll be OVERWRITTEN with this data.
+      operationId: postFclPickupRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FclPickupRequest'
+            example:
+              container: "MSKU1234567"
+              portCode: "AUBNE"
+              preferredPickupDateTime: "2025-12-15T09:30:00"
+      responses:
+        '204':
+          description: No Content - FCL pickup request successfully processed
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingContainer:
+                  summary: Missing Container
+                  value: { Message: "Container is required." }
+                InvalidContainer:
+                  summary: Invalid Container
+                  value: { Message: "Container is invalid." }
+                MissingPortCode:
+                  summary: Missing PortCode
+                  value: { Message: "PortCode value is required." }
+                InvalidPortCode:
+                  summary: Invalid PortCode
+                  value: { Message: "PortCode AUZZZ not found in available service areas." }
+                InvalidDateTime:
+                  summary: Invalid DateTime
+                  value: { Message: "PreferredPickupDateTime is invalid." }
+                DateInPast:
+                  summary: Date In Past
+                  value: { Message: "The requested pickup date cannot be in the past." }
+                AlreadyPickedUp:
+                  summary: Container Already Picked Up
+                  value: { Message: "The container has already been picked up." }
+                ContainerNotFound:
+                  summary: Container Not Found
+                  value: { Message: "Container not found." }
+                MultipleJobs:
+                  summary: Multiple Jobs Found
+                  value: { Message: "More than one job matches the provided container at this port." }
+                MissingCustomerConfiguration:
+                  summary: Missing Customer Configuration
+                  value: { Message: "Customer not configured for this account, please contact support." }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Unauthorized:
+                  summary: Unauthorized Access
+                  value: { Message: "User is not authorized." }
+        '409':
+          description: Conflict - Unable to update pickup request
+        '500':
+          description: Internal Server Error
+      security:
+        - bearerAuth: []
+  /container/schedule/empty-available:
+    post:
+      tags:
+        - Container Scheduling
+      x-environment: uat
+      summary: "[UAT] Notify Empty Container Available"
+      description: |
+        Notify that an import container is now empty and available for pickup. This endpoint allows customers to specify when the empty container will be ready for collection.
+
+        The container must be an active import container that has already been delivered to the client location.
+
+        All date times must be provided in LOCAL time for the destination port/state. Do not include a UTC offset.
+
+        If an available / notified date has been supplied previously, it wll be OVERWRITTEN with this data.
+      operationId: postEmptyAvailable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmptyAvailableRequest'
+            example:
+              container: "MSKU1234567"
+              portCode: "AUBNE"
+              emptyAvailableDateTime: "2025-12-15T14:00:00"
+              notes: "Container unpacked and ready for collection"
+      responses:
+        '204':
+          description: No Content - Empty available notification successfully processed
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingContainer:
+                  summary: Missing Container
+                  value: { Message: "Container is required." }
+                InvalidContainer:
+                  summary: Invalid Container
+                  value: { Message: "Container is invalid." }
+                MissingPortCode:
+                  summary: Missing PortCode
+                  value: { Message: "PortCode value is required." }
+                InvalidPortCode:
+                  summary: Invalid PortCode
+                  value: { Message: "PortCode AUZZZ not found in available service areas." }
+                InvalidDateTime:
+                  summary: Invalid DateTime
+                  value: { Message: "EmptyAvailableDateTime is invalid." }
+                NotYetDelivered:
+                  summary: Container Not Yet Delivered
+                  value: { Message: "The container has not yet been delivered." }
+                AlreadySet:
+                  summary: Empty Available Already Set
+                  value: { Message: "Empty available date has already been set for this container." }
+                ContainerNotFound:
+                  summary: Container Not Found
+                  value: { Message: "Container not found." }
+                MultipleJobs:
+                  summary: Multiple Jobs Found
+                  value: { Message: "More than one job matches the provided container at this port." }
+                MissingCustomerConfiguration:
+                  summary: Missing Customer Configuration
+                  value: { Message: "Customer not configured for this account, please contact support." }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Unauthorized:
+                  summary: Unauthorized Access
+                  value: { Message: "User is not authorized." }
+        '409':
+          description: Conflict - Unable to update empty available notification
+        '500':
+          description: Internal Server Error
+      security:
+        - bearerAuth: []
+  /billing-pricing/container-costs:
     get:
-      tags: 
-        - Production
-      summary: Get Rate Calculator Transport Estimate
+      tags:
+        - Billing & Pricing
+      x-environment: production
+      summary: "[Production] Get Container Costs"
+      description: |
+        Request detailed cost breakdown for a specific container job, including all non-deleted and non-waived charges.
+
+        This endpoint provides transparency into billing by showing all cost line items associated with a container job.
+        Users can filter by container number, port, and optionally by customer reference to ensure the correct job is retrieved.
+
+        All charges returned are actual charges that will appear on invoices (excludes deleted and waived items).
+
+        **IMPORTANT:** This endpoint returns only direct costs associated with the container itself.
+        It does NOT include any costs for delivery or redelivery of cargo from that container, which are
+        billed separately under a different job (freight load) - api coming in future.
+      operationId: getContainerCosts
+      parameters:
+        - name: ContainerNumber
+          in: query
+          required: true
+          schema:
+            type: string
+            example: ABCD1234567
+            maxLength: 11
+          description: Full container number
+        - name: PortCode
+          in: query
+          required: true
+          schema:
+            type: string
+            example: AUBNE
+            maxLength: 5
+            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL]
+          description: Code of the port of operation where the container job is initiated in Australia/NZ.
+        - name: CustomerReference
+          in: query
+          required: false
+          schema:
+            type: string
+            example: CUST-REF-001
+          description: Optional customer reference to filter jobs when multiple jobs exist for the same container at the same port.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerCost'
+              example:
+                containerNumber: "ABCD1234567"
+                portCode: "AUBNE"
+                arrowOrderNumber: "ORD-2025-001"
+                poNumber: "PO-2025-456"
+                customerReference: "CUST-REF-001"
+                costs:
+                  - chargeName: "Transport"
+                    description: "FCL Container Transport"
+                    quantity: 1.0
+                    unitPrice: 350.00
+                    amount: 350.00
+                    taxAmount: 35.00
+                    total: 385.00
+                    isCredit: false
+                    invoiceNumber: "INV-2025-001234"
+                  - chargeName: "Fuel Surcharge"
+                    description: "Fuel surcharge @ 25%"
+                    quantity: 0.25
+                    unitPrice: 350.00
+                    amount: 87.50
+                    taxAmount: 8.75
+                    total: 96.25
+                    isCredit: false
+                    invoiceNumber: "INV-2025-001234"
+                  - chargeName: "Wharf Access"
+                    description: "Terminal access fee"
+                    quantity: 1.0
+                    unitPrice: 50.00
+                    amount: 50.00
+                    taxAmount: 5.00
+                    total: 55.00
+                    isCredit: false
+                    invoiceNumber: "INV-2025-001234"
+        '202':
+          description: Accepted - Container Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ContainerNotFound:
+                  summary: Container Not Found
+                  value: { Message: "Container not found." }
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                MissingContainer:
+                  summary: Missing Container Number
+                  value: { Message: "Container number is required." }
+                InvalidContainer:
+                  summary: Invalid Container Number
+                  value: { Message: "Container number is invalid." }
+                MissingPortCode:
+                  summary: Missing PortCode
+                  value: { Message: "PortCode value is required." }
+                InvalidPortCode:
+                  summary: Invalid PortCode
+                  value: { Message: "PortCode AUZZZ not found in available service areas." }
+                MultipleJobs:
+                  summary: Multiple Jobs Found
+                  value: { Message: "More than one job matches the provided criteria. Please provide a customer reference." }
+                MissingCustomerConfiguration:
+                  summary: Missing Customer Configuration
+                  value: { Message: "Customer not configured for this account, please contact support." }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                Unauthorized:
+                  summary: Unauthorized Access
+                  value: { Message: "User is not authorized." }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ServerError:
+                  summary: Server Error
+                  value: { Message: "There was an error processing this request, please contact support." }
+      security:
+        - bearerAuth: []
+  /billing-pricing/ratecalculator:
+    get:
+      tags:
+        - Billing & Pricing
+      x-environment: production
+      summary: "[Production] Get Rate Calculator Transport Estimate"
       description: |
         Request rates / pricing for FCL Container Transport based on information about the container, shipment, delivery location and mode.
 
@@ -483,6 +1122,456 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    ContainerJob:
+      type: object
+      properties:
+        containerDetails:
+          $ref: '#/components/schemas/ContainerDetails'
+        jobType:
+          type: string
+          description: Job type (Import/Export)
+        arrowOrderNumber:
+          type: string
+          description: Arrow order number
+        transportStatus:
+          type: string
+          description: Current transport status
+        customerName:
+          type: string
+          description: Customer name
+        customerReference:
+          type: string
+          nullable: true
+          description: Customer reference number
+        billOfLading:
+          type: string
+          nullable: true
+          description: Bill of Lading number
+        releaseNumber:
+          type: string
+          nullable: true
+          description: Release number
+        poNumber:
+          type: string
+          nullable: true
+          description: Purchase Order number
+        ediContainerReference:
+          type: string
+          nullable: true
+          description: EDI container reference
+        vesselVoyageIn:
+          allOf:
+            - $ref: '#/components/schemas/VesselVoyage'
+          nullable: true
+          description: Vessel/voyage information for import
+        vesselVoyageOut:
+          allOf:
+            - $ref: '#/components/schemas/VesselVoyage'
+          nullable: true
+          description: Vessel/voyage information for export
+        portCode:
+          type: string
+          description: Port code
+        portName:
+          type: string
+          description: Port name
+        branchName:
+          type: string
+          description: Branch name
+        timeZoneId:
+          type: string
+          description: Time zone identifier (e.g., "Australia/Brisbane")
+        clientLocation:
+          $ref: '#/components/schemas/Location'
+        milestones:
+          $ref: '#/components/schemas/Milestones'
+        trailerType:
+          type: string
+          nullable: true
+          description: Trailer type
+        transportDeliveryMethod:
+          type: string
+          nullable: true
+          description: Transport delivery method
+        timeSensitiveDelivery:
+          type: boolean
+          description: Whether delivery is time sensitive
+        timeSensitiveCollection:
+          type: boolean
+          description: Whether collection is time sensitive
+        transportLegs:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransportLeg'
+          nullable: true
+        cfsJobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CfsJob'
+          nullable: true
+          description: CFS (Container Freight Station) jobs associated with this container
+        quarantineJobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuarantineJob'
+          nullable: true
+          description: Quarantine jobs associated with this container
+    ContainerDetails:
+      type: object
+      properties:
+        containerNumber:
+          type: string
+          description: Container number
+        containerSize:
+          type: string
+          nullable: true
+          description: Container size (e.g., "20ft", "40ft")
+        isRefrigerated:
+          type: boolean
+          description: Whether the container is refrigerated
+        temperature:
+          type: number
+          format: double
+          nullable: true
+          description: Temperature setting for refrigerated containers
+        isHazardous:
+          type: boolean
+          description: Whether the cargo is hazardous
+        grossWeight:
+          type: number
+          format: double
+          nullable: true
+          description: Gross weight of container
+        tareWeight:
+          type: number
+          format: double
+          nullable: true
+          description: Tare weight (empty container weight)
+        sealNumber:
+          type: string
+          nullable: true
+          description: Seal number
+        shippingCompanyOperator:
+          type: string
+          nullable: true
+          description: Shipping company/operator name
+    VesselVoyage:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Vessel name
+        imo:
+          type: string
+          nullable: true
+          description: IMO number
+        voyage:
+          type: string
+          description: Voyage number
+        estimatedArrival:
+          type: string
+          format: date-time
+          nullable: true
+          description: Estimated time of arrival
+        estimatedDeparture:
+          type: string
+          format: date-time
+          nullable: true
+          description: Estimated time of departure
+        loadPort:
+          type: string
+          nullable: true
+          description: Loading port code
+        dischargePort:
+          type: string
+          nullable: true
+          description: Discharge port code
+        inVoyage:
+          type: string
+          nullable: true
+          description: Inbound voyage number
+        outVoyage:
+          type: string
+          nullable: true
+          description: Outbound voyage number
+    Location:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+          description: Location name
+        address:
+          type: string
+          nullable: true
+          description: Street address
+        suburb:
+          type: string
+          nullable: true
+          description: Suburb name
+        state:
+          type: string
+          nullable: true
+          description: State name
+        postcode:
+          type: string
+          nullable: true
+          description: Postcode
+        locationType:
+          type: string
+          nullable: true
+          description: Type of location (Client, Wharf, Yard, etc.)
+        latitude:
+          type: number
+          format: double
+          nullable: true
+          description: Latitude coordinate
+        longitude:
+          type: number
+          format: double
+          nullable: true
+          description: Longitude coordinate
+        zone:
+          type: string
+          nullable: true
+          description: Pricing/delivery zone
+    Milestones:
+      type: object
+      properties:
+        dateCreated:
+          type: string
+          format: date-time
+          description: Date the job was created
+        slotDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Scheduled slot date/time
+        dateSlotBooked:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date when slot was booked
+        dateEdoAttached:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date EDO was attached
+        praLodgedDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date PRA was lodged
+        dischargeDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Container discharge date from vessel
+        preferredDeliveryDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Preferred delivery date
+        deliveredToClientDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date/time delivered to client location
+        pickedUpFromClientDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date/time picked up from client location
+        deliveredToWharfDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date/time delivered to wharf
+        pickedUpFromWharfDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date/time picked up from wharf
+        pickedUpFromEmptyParkDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date/time picked up from empty park
+        deliverdToEmptyParkDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date/time delivered to empty park
+        preferredPickupDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Preferred pickup date
+        emptyNotifiedDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date customer notified container is empty
+        emptyAvailableDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date empty container is available for pickup
+        detentionStart:
+          type: string
+          format: date-time
+          nullable: true
+          description: Detention start date
+        firstInYardDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date container first entered yard
+        yardStorageStartDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date yard storage charges begin
+    TransportLeg:
+      type: object
+      properties:
+        sequence:
+          type: integer
+          description: Leg order/sequence number
+        status:
+          type: string
+          description: Transport leg status
+        startLocation:
+          $ref: '#/components/schemas/Location'
+        endLocation:
+          $ref: '#/components/schemas/Location'
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Start date/time
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: End date/time
+        ladenStatus:
+          type: string
+          nullable: true
+          description: Laden status of the container for this leg ("Empty" or "Full")
+        isFinished:
+          type: boolean
+          description: Whether this leg is finished
+    CfsJob:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+          description: CFS job type (e.g., Pack, Unpack)
+        status:
+          type: string
+          nullable: true
+          description: Current status of the CFS job
+        plannedDateTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Planned date/time for CFS operation
+        startedDateTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Actual start date/time
+        endedDateTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Actual end date/time
+        confirmedDateTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date/time when CFS job was confirmed
+        cargoAvailableDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date when cargo became available
+        laidDownDateTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date/time when container was laid down for CFS
+        containerLocation:
+          type: string
+          nullable: true
+          description: Location of container during CFS operation
+        cargoHandlingType:
+          type: string
+          nullable: true
+          description: Type of cargo handling required
+        isCargoDamaged:
+          type: boolean
+          nullable: true
+          description: Whether cargo was damaged
+        damages:
+          type: string
+          nullable: true
+          description: Description of any damages
+        notes:
+          type: string
+          nullable: true
+          description: Additional notes
+    QuarantineJob:
+      type: object
+      properties:
+        jobType:
+          type: string
+          nullable: true
+          description: Quarantine job type (e.g., Treatment)
+        subType:
+          type: string
+          nullable: true
+          description: Quarantine sub-type (e.g., Fumigation, Heat Treatment)
+        currentStatus:
+          type: string
+          nullable: true
+          description: Current status of the quarantine job
+        estimatedTreatmentHours:
+          type: integer
+          nullable: true
+          description: Estimated hours for treatment
+        actualTreatmentHours:
+          type: integer
+          nullable: true
+          description: Actual hours taken for treatment
+        quarantineSteps:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuarantineStep'
+          nullable: true
+          description: Workflow steps for quarantine treatment
+    QuarantineStep:
+      type: object
+      properties:
+        sequence:
+          type: integer
+          description: Step sequence number
+        quarantineJobStep:
+          type: string
+          nullable: true
+          description: Name of the quarantine job step (e.g., Inspection, Fumigation)
+        bookedDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date when this step was booked
+        completedDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date when this step was completed
     DeliveryPeriodAvailable:
       type: object
       properties:
@@ -536,10 +1625,10 @@ components:
         Status:
           type: string
           description: Current status of the job location.  Often with say "At" or "In Transit To" followed by the name of the current or destination location's name.  If Import container's vessel has not arrived at port, will return "On Water".
-        IsEmpty:
-          type: boolean
+        LadenStatus:
+          type: string
           nullable: true
-          description: Indicates if the container is currently (or was last) empty.
+          description: Laden status of the container ("Empty" or "Full")
         IsCompleted:
           type: boolean
           nullable: true
@@ -588,6 +1677,159 @@ components:
           type: number
           example: 
           description: The total tax amount applicable in addition to the AmountExTax
+    DeliveryBookingRequest:
+      type: object
+      required:
+        - container
+        - portCode
+        - preferredDeliveryDateTime
+      properties:
+        container:
+          type: string
+          maxLength: 11
+          description: Container number (e.g. MSKU1234567)
+          example: "MSKU1234567"
+        portCode:
+          type: string
+          maxLength: 5
+          enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL, AUTSV, AUDRW]
+          description: Port code (e.g. AUBNE, AUMEL, AUFRE, AUSYD, AUADL, AUTSV, AUDRW)
+          example: "AUBNE"
+        preferredDeliveryDateTime:
+          type: string
+          format: date-time
+          description: Preferred delivery date and time in ISO 8601 local time (no UTC offset), e.g. 2025-12-15T10:30:00
+          example: "2025-12-15T10:30:00"
+        isTimeSensitive:
+          type: boolean
+          default: false
+          description: Indicates if delivery is time sensitive (delivery within 30 minutes of specified time)
+          example: true
+    FclPickupRequest:
+      type: object
+      required:
+        - container
+        - portCode
+        - preferredPickupDateTime
+      properties:
+        container:
+          type: string
+          maxLength: 11
+          description: Container number (e.g. MSKU1234567)
+          example: "MSKU1234567"
+        portCode:
+          type: string
+          maxLength: 5
+          enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL, AUTSV, AUDRW]
+          description: Port code (e.g. AUBNE, AUMEL, AUFRE, AUSYD, AUADL, AUTSV, AUDRW)
+          example: "AUBNE"
+        preferredPickupDateTime:
+          type: string
+          format: date-time
+          description: Preferred pickup date and time in ISO 8601 local time (no UTC offset), e.g. 2025-12-15T10:30:00
+          example: "2025-12-15T10:30:00"
+        isTimeSensitive:
+          type: boolean
+          default: false
+          description: Indicates if pickup is time sensitive
+          example: true
+    EmptyAvailableRequest:
+      type: object
+      required:
+        - container
+        - portCode
+        - emptyAvailableDateTime
+      properties:
+        container:
+          type: string
+          maxLength: 11
+          description: Container number (e.g. MSKU1234567)
+          example: "MSKU1234567"
+        portCode:
+          type: string
+          maxLength: 5
+          enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL, AUTSV, AUDRW]
+          description: Port code (e.g. AUBNE, AUMEL, AUFRE, AUSYD, AUADL, AUTSV, AUDRW)
+          example: "AUBNE"
+        emptyAvailableDateTime:
+          type: string
+          format: date-time
+          description: Date and time when the empty container will be available for pickup in ISO 8601 local time (no UTC offset), e.g. 2025-12-15T10:30:00
+          example: "2025-12-15T14:00:00"
+        notes:
+          type: string
+          nullable: true
+          description: Optional notes about the empty container notification
+          example: "Container unpacked and ready for collection"
+    ContainerCost:
+      type: object
+      properties:
+        containerNumber:
+          type: string
+          nullable: true
+          description: Container number
+        portCode:
+          type: string
+          description: Port code
+        arrowOrderNumber:
+          type: string
+          nullable: true
+          description: Arrow order number
+        poNumber:
+          type: string
+          nullable: true
+          description: Purchase order number
+        customerReference:
+          type: string
+          nullable: true
+          description: Customer reference number
+        costs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostItem'
+          description: List of cost line items for the container (excludes cargo delivery/redelivery costs)
+    CostItem:
+      type: object
+      properties:
+        chargeName:
+          type: string
+          nullable: true
+          description: Name of the charge (e.g., "Transport", "Fuel Surcharge")
+        description:
+          type: string
+          nullable: true
+          description: Detailed description of the charge
+        quantity:
+          type: number
+          format: decimal
+          description: Quantity of the charge
+        unitPrice:
+          type: number
+          format: decimal
+          nullable: true
+          description: Unit price
+        amount:
+          type: number
+          format: decimal
+          nullable: true
+          description: Amount excluding tax
+        taxAmount:
+          type: number
+          format: decimal
+          nullable: true
+          description: Tax amount (GST)
+        total:
+          type: number
+          format: decimal
+          nullable: true
+          description: Total amount including tax
+        isCredit:
+          type: boolean
+          description: Whether this is a credit (negative charge)
+        invoiceNumber:
+          type: string
+          nullable: true
+          description: Invoice document number if the charge has been invoiced
     ErrorResponse:
       type: object
       properties:
