@@ -49,7 +49,7 @@ paths:
             type: string
             example: AUBNE
             maxLength: 5
-            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL]
+            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL, AUTSV, AUDRW]
           description: Code of the port of operation where the container job is initiated in Australia/NZ.
       responses:
         '200':
@@ -61,26 +61,26 @@ paths:
               example:
                 containerDetails:
                   containerNumber: "ABCD1234567"
-                  containerSize: "40ft"
+                  containerSize: "40HC"
                   isRefrigerated: false
                   temperature: null
                   isHazardous: false
                   grossWeight: 25000
                   tareWeight: 2300
                   sealNumber: "SEAL123456"
-                  shippingCompanyOperator: "Maersk"
+                  shippingCompanyOperator: "MAE"
                 jobType: "Import"
-                arrowOrderNumber: "ORD-2025-001"
-                transportStatus: "In Transit"
+                arrowOrderNumber: "OCQ260100001"
+                transportStatus: "Container at ARROW HALLAM (V3500) Full"
                 customerName: "ABC Company Pty Ltd"
-                customerReference: "CUST-REF-001"
-                billOfLading: "BOL-123456"
-                releaseNumber: "REL-789"
+                customerReference: "S000123456"
+                billOfLading: "MAEU56411266456341"
+                releaseNumber: "4524855511"
                 poNumber: "PO-2025-456"
                 ediContainerReference: "EDI-REF-001"
                 vesselVoyageIn:
                   name: "MAERSK ESSEX"
-                  imo: "IMO1234567"
+                  imo: "9991457"
                   voyage: "025N"
                   estimatedArrival: "2025-12-10T14:30:00"
                   estimatedDeparture: null
@@ -91,8 +91,8 @@ paths:
                 vesselVoyageOut: null
                 portCode: "AUBNE"
                 portName: "Brisbane"
-                branchName: "Brisbane Branch"
-                timeZoneId: "Australia/Brisbane"
+                branchName: "Brisbane"
+                timeZoneId: "AEST"
                 clientLocation:
                   name: "ABC Warehouse"
                   address: "123 Industrial Drive"
@@ -123,6 +123,10 @@ paths:
                   detentionStart: "2025-12-17T00:00:00"
                   firstInYardDate: "2025-12-10T15:45:00"
                   yardStorageStartDate: "2025-12-10T15:45:00"
+                  unpackCompletedDate: "2025-12-12T10:45:00"
+                  packCompletionDate: null
+                  quarantineStartDate: "2025-12-11T14:00:00"
+                  quarantineCompletedDate: "2025-12-12T17:00:00"
                 trailerType: "Sideloader"
                 transportDeliveryMethod: "Sideloader Drop"
                 timeSensitiveDelivery: true
@@ -142,14 +146,14 @@ paths:
                       zone: null
                     endLocation:
                       name: "ABC Warehouse"
-                      address: "123 Industrial Drive"
+                      address: "123 Something Drive"
                       suburb: "Acacia Ridge"
                       state: "Queensland"
                       postcode: "4110"
                       locationType: "Client"
                       latitude: -27.586
                       longitude: 153.025
-                      zone: "Zone 1"
+                      zone: "Brisbane Zone 3 (approx. 45-60 kms)"
                     startDate: "2025-12-11T07:00:00"
                     endDate: "2025-12-11T09:30:00"
                     ladenStatus: "Full"
@@ -160,20 +164,18 @@ paths:
                     plannedDateTime: "2025-12-12T08:00:00"
                     startedDateTime: "2025-12-12T08:15:00"
                     endedDateTime: "2025-12-12T10:45:00"
-                    confirmedDateTime: "2025-12-12T10:50:00"
                     cargoAvailableDate: "2025-12-12T11:00:00"
                     laidDownDateTime: "2025-12-12T08:00:00"
                     containerLocation: "CFS Bay 3"
                     cargoHandlingType: "Manual Unpack"
                     isCargoDamaged: false
                     damages: null
-                    notes: "Standard unpack completed without issues"
                 quarantineJobs:
-                  - jobType: "Treatment"
-                    subType: "Fumigation"
+                  - jobType: "Fumigation"
+                    subType: "Sulfuryl Fluoride BMSB"
                     currentStatus: "Completed"
-                    estimatedTreatmentHours: 24
-                    actualTreatmentHours: 26
+                    estimatedTreatmentHours: null
+                    actualTreatmentHours: null
                     quarantineSteps:
                       - sequence: 1
                         quarantineJobStep: "Inspection"
@@ -397,7 +399,7 @@ paths:
             type: string
             example: AUBNE
             maxLength: 5
-            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL]
+            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL, AUTSV, AUDRW]
           description: Code of the port.
         - name: ContainerNumber
           in: query
@@ -762,7 +764,7 @@ paths:
             type: string
             example: AUBNE
             maxLength: 5
-            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL]
+            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL, AUTSV, AUDRW]
           description: Code of the port of operation where the container job is initiated in Australia/NZ.
         - name: CustomerReference
           in: query
@@ -894,7 +896,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL]
+            enum: [AUBNE, AUMEL, AUFRE, AUSYD, AUADL, AUTSV, AUDRW]
             maxLength: 5
           description: Code of the port of final destination (import) or loading (export). 
         - name: TransportDeliveryMethod
@@ -1225,7 +1227,7 @@ components:
         containerSize:
           type: string
           nullable: true
-          description: Container size (e.g., "20ft", "40ft")
+          description: Container size (e.g., "20GP", "40HC")
         isRefrigerated:
           type: boolean
           description: Whether the container is refrigerated
@@ -1432,6 +1434,26 @@ components:
           format: date-time
           nullable: true
           description: Date yard storage charges begin
+        unpackCompletedDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date when the first CFS unpack job was completed
+        packCompletionDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date when the first CFS pack job was completed
+        quarantineStartDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date when the first quarantine job was started
+        quarantineCompletedDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date when the last quarantine job was completed
     TransportLeg:
       type: object
       properties:
@@ -1605,26 +1627,26 @@ components:
         CoordinateErrorDescription:
           type: string
           description: Description of the error if any or why current coordinates could not be returned.
-        JobLocation:
+        ContainerLocation:
           description: A model containing information specifically about the coordinates and location of the container
-          type: JobLocation
-          $ref: '#/components/schemas/JobLocation'
-    JobLocation:
+          type: ContainerLocation
+          $ref: '#/components/schemas/ContainerLocation'
+    ContainerLocation:
       type: object
       properties:
         LastLatitude:
           type: number
           format: double
           nullable: true
-          description: Last known latitude of the job location.
+          description: Last known latitude of the container location.
         LastLongitude:
           type: number
           format: double
           nullable: true
-          description: Last known longitude of the job location.
+          description: Last known longitude of the container location.
         Status:
           type: string
-          description: Current status of the job location.  Often with say "At" or "In Transit To" followed by the name of the current or destination location's name.  If Import container's vessel has not arrived at port, will return "On Water".
+          description: A descriptive Current status of the container location.  Often with say "Container At" or "In Transit To" followed by the name of the current or destination location's name and laden status.  If Import container's vessel has not arrived at port, will return "On Water".
         LadenStatus:
           type: string
           nullable: true
