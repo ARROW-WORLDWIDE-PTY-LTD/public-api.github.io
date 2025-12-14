@@ -71,6 +71,9 @@ paths:
                   tareWeight: 2300
                   sealNumber: "SEAL123456"
                   shippingCompanyOperator: "MAE"
+                  isOOG: false
+                  ediContainerSeq: 1
+                  isBulk: true
                 jobType: "Import"
                 arrowOrderNumber: "OCQ260100001"
                 transportStatus: "Container at ARROW HALLAM (V3500) Full"
@@ -80,6 +83,9 @@ paths:
                 releaseNumber: "4524855511"
                 poNumber: "PO-2025-456"
                 ediContainerReference: "EDI-REF-001"
+                batch: "P12126A"
+                commodityName: "EXCEED AP3AW NATURAL POLYPROPYLENE"
+                doorDirection: "REAR"
                 vesselVoyageIn:
                   name: "MAERSK ESSEX"
                   imo: "9991457"
@@ -1161,6 +1167,18 @@ components:
           type: string
           nullable: true
           description: EDI container reference (if provided when booking was sent via edi).  For Cargowise, this is the ContainerJobID
+        batch:
+          type: string
+          nullable: true
+          description: Batch number associated with the cargo in the container
+        commodityName:
+          type: string
+          nullable: true
+          description: Short name of the commodity
+        doorDirection:
+          type: string
+          nullable: true
+          description: Door direction of the container (e.g., "Front", "Rear", "Any)
         vesselVoyageIn:
           allOf:
             - $ref: '#/components/schemas/VesselVoyage'
@@ -1258,6 +1276,17 @@ components:
           type: string
           nullable: true
           description: Shipping company/operator name
+        isOOG:
+          type: boolean
+          description: Whether the container is Out of Gauge (oversized)
+        ediContainerSeq:
+          type: integer
+          format: int32
+          nullable: true
+          description: EDI container sequence number - for use when order was supplied via edi.  Very important for matching export contaners.
+        isBulk:
+          type: boolean
+          description: Whether the container is a bulk container
     VesselVoyage:
       type: object
       properties:
