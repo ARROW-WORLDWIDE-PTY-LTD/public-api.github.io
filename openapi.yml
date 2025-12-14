@@ -1,9 +1,11 @@
 openapi: 3.0.1
 info:
   title: AOS Technologies OpenAPI Specification
-  description: 
+  description: |
     API endpoints supplied by AOS for getting detailed Port Logistics information.  
-    URLs, credentials and other information can be requested from aoshelpdesk@arrowtransport.com.au for any approved account customers.
+
+    URLs, credentials and other information can be requested from aoshelpdesk@arrowtransport.com.au for approved account customers.
+    
     Rate limits apply on a per-account basis of 30 requests per minute across all endpoints.
   version: v0.9
 tags:
@@ -18,7 +20,7 @@ paths:
     get:
       tags:
         - Container Information
-      x-environment: production
+      x-environment: uat
       summary: "[UAT] Get Container Job Details"
       description: |
         Request comprehensive information about a container and its associated job, including:
@@ -102,7 +104,7 @@ paths:
                   locationType: "Client"
                   latitude: -27.586
                   longitude: 153.025
-                  zone: "Zone 1"
+                  zone: "Brisbane Zone 3 (approx. 45-60 kms)"
                 milestones:
                   dateCreated: "2025-12-01T08:00:00"
                   slotDate: "2025-12-15T09:00:00"
@@ -165,9 +167,7 @@ paths:
                     startedDateTime: "2025-12-12T08:15:00"
                     endedDateTime: "2025-12-12T10:45:00"
                     cargoAvailableDate: "2025-12-12T11:00:00"
-                    laidDownDateTime: "2025-12-12T08:00:00"
-                    containerLocation: "CFS Bay 3"
-                    cargoHandlingType: "Manual Unpack"
+                    cargoHandlingType: "16t Fork"
                     isCargoDamaged: false
                     damages: null
                 quarantineJobs:
@@ -734,15 +734,15 @@ paths:
     get:
       tags:
         - Billing & Pricing
-      x-environment: production
-      summary: "[Production] Get Container Costs"
+      x-environment: uat
+      summary: "[UAT] Get Container Costs"
       description: |
         Request detailed cost breakdown for a specific container job, including all non-deleted and non-waived charges.
 
         This endpoint provides transparency into billing by showing all cost line items associated with a container job.
         Users can filter by container number, port, and optionally by customer reference to ensure the correct job is retrieved.
-
-        All charges returned are actual charges that will appear on invoices (excludes deleted and waived items).
+        
+        Unless an invoice number value is given, the items returned should be considered indicative only. No charges are final until an invoice has been sent. Via depot storage and other charges may be displayed here based on either the current date or the future expected delivery date.
 
         **IMPORTANT:** This endpoint returns only direct costs associated with the container itself.
         It does NOT include any costs for delivery or redelivery of cargo from that container, which are
@@ -783,9 +783,9 @@ paths:
               example:
                 containerNumber: "ABCD1234567"
                 portCode: "AUBNE"
-                arrowOrderNumber: "ORD-2025-001"
+                arrowOrderNumber: "OCQ260100001"
                 poNumber: "PO-2025-456"
-                customerReference: "CUST-REF-001"
+                customerReference: "S00045684"
                 costs:
                   - chargeName: "Transport"
                     description: "FCL Container Transport"
@@ -795,7 +795,7 @@ paths:
                     taxAmount: 35.00
                     total: 385.00
                     isCredit: false
-                    invoiceNumber: "INV-2025-001234"
+                    invoiceNumber: "INVQL260100045"
                   - chargeName: "Fuel Surcharge"
                     description: "Fuel surcharge @ 25%"
                     quantity: 0.25
@@ -804,7 +804,7 @@ paths:
                     taxAmount: 8.75
                     total: 96.25
                     isCredit: false
-                    invoiceNumber: "INV-2025-001234"
+                    invoiceNumber: "INVQL260100045"
                   - chargeName: "Wharf Access"
                     description: "Terminal access fee"
                     quantity: 1.0
@@ -813,7 +813,7 @@ paths:
                     taxAmount: 5.00
                     total: 55.00
                     isCredit: false
-                    invoiceNumber: "INV-2025-001234"
+                    invoiceNumber: "INVQL260100045"
         '202':
           description: Accepted - Container Not Found
           content:
@@ -942,7 +942,7 @@ paths:
           schema:
             type: boolean
             default: false
-          description: Indicates whether or not the cargo is temperature sensitive in a refrigerated shipping container that requires power and monitoring while in Arrow's
+          description: Indicates whether or not the cargo is temperature sensitive in a refrigerated shipping container that requires power and monitoring while in the transporter's yard.
           example: true
         - name: IsHazardous
           in: query
@@ -1131,41 +1131,41 @@ components:
           $ref: '#/components/schemas/ContainerDetails'
         jobType:
           type: string
-          description: Job type (Import/Export)
+          description: Job type ie. (Import/Export)
         arrowOrderNumber:
           type: string
-          description: Arrow order number
+          description: Arrow's order number
         transportStatus:
           type: string
-          description: Current transport status
+          description: A descriptive Current status of the container location.  Often with say "Container At" or "In Transit To" followed by the name of the current or destination location's name and laden status.  
         customerName:
           type: string
-          description: Customer name
+          description: Instructing/Billing Customer name
         customerReference:
           type: string
           nullable: true
-          description: Customer reference number
+          description: Instructing/Billing Customer reference number
         billOfLading:
           type: string
           nullable: true
-          description: Bill of Lading number
+          description: Ocean Bill of Lading number (for imports)
         releaseNumber:
           type: string
           nullable: true
-          description: Release number
+          description: Release number / Export booking for empty collection
         poNumber:
           type: string
           nullable: true
-          description: Purchase Order number
+          description: Instructing/Billing Purchase Order number
         ediContainerReference:
           type: string
           nullable: true
-          description: EDI container reference
+          description: EDI container reference (if provided when booking was sent via edi).  For Cargowise, this is the ContainerJobID
         vesselVoyageIn:
           allOf:
             - $ref: '#/components/schemas/VesselVoyage'
           nullable: true
-          description: Vessel/voyage information for import
+          description: Vessel/voyage information for import, this is the final vessel berthing at the port of operation
         vesselVoyageOut:
           allOf:
             - $ref: '#/components/schemas/VesselVoyage'
@@ -1179,10 +1179,10 @@ components:
           description: Port name
         branchName:
           type: string
-          description: Branch name
+          description: The transporter's Branch name
         timeZoneId:
           type: string
-          description: Time zone identifier (e.g., "Australia/Brisbane")
+          description: Time zone identifier (e.g., "AEST")
         clientLocation:
           $ref: '#/components/schemas/Location'
         milestones:
@@ -1190,22 +1190,23 @@ components:
         trailerType:
           type: string
           nullable: true
-          description: Trailer type
+          description: Trailer type, this is the base type of trailer that will be used to transport the container.
         transportDeliveryMethod:
           type: string
           nullable: true
-          description: Transport delivery method
+          description: Transport delivery method, this is a description of both the trailer type and drop mode
         timeSensitiveDelivery:
           type: boolean
-          description: Whether delivery is time sensitive
+          description: Whether the Preferred Delivery Date for the container is considered time sensitive
         timeSensitiveCollection:
           type: boolean
-          description: Whether collection is time sensitive
+          description: Whether Preferred Pickup/collection Date for an Export FCL is time sensitive.  Not applicable to import empty collection.
         transportLegs:
           type: array
           items:
             $ref: '#/components/schemas/TransportLeg'
           nullable: true
+          description: A list of all of the transport legs associated with this container
         cfsJobs:
           type: array
           items:
@@ -1217,7 +1218,7 @@ components:
           items:
             $ref: '#/components/schemas/QuarantineJob'
           nullable: true
-          description: Quarantine jobs associated with this container
+          description: Quarantine jobs associated with this container eg. fumigations, inspections
     ContainerDetails:
       type: object
       properties:
@@ -1343,7 +1344,7 @@ components:
         dateCreated:
           type: string
           format: date-time
-          description: Date the job was created
+          description: Date the job/order was created
         slotDate:
           type: string
           format: date-time
@@ -1510,29 +1511,15 @@ components:
           format: date-time
           nullable: true
           description: Actual end date/time
-        confirmedDateTime:
-          type: string
-          format: date-time
-          nullable: true
-          description: Date/time when CFS job was confirmed
         cargoAvailableDate:
           type: string
           format: date-time
           nullable: true
-          description: Date when cargo became available
-        laidDownDateTime:
-          type: string
-          format: date-time
-          nullable: true
-          description: Date/time when container was laid down for CFS
-        containerLocation:
-          type: string
-          nullable: true
-          description: Location of container during CFS operation
+          description: Date cargo available for collection
         cargoHandlingType:
           type: string
           nullable: true
-          description: Type of cargo handling required
+          description: 16t Fork
         isCargoDamaged:
           type: boolean
           nullable: true
@@ -1541,10 +1528,6 @@ components:
           type: string
           nullable: true
           description: Description of any damages
-        notes:
-          type: string
-          nullable: true
-          description: Additional notes
     QuarantineJob:
       type: object
       properties:
@@ -1646,7 +1629,7 @@ components:
           description: Last known longitude of the container location.
         Status:
           type: string
-          description: A descriptive Current status of the container location.  Often with say "Container At" or "In Transit To" followed by the name of the current or destination location's name and laden status.  If Import container's vessel has not arrived at port, will return "On Water".
+          description: If Import container's vessel has not arrived at port, will return "On Water".
         LadenStatus:
           type: string
           nullable: true
@@ -1796,7 +1779,7 @@ components:
         arrowOrderNumber:
           type: string
           nullable: true
-          description: Arrow order number
+          description: The Transporter's order number
         poNumber:
           type: string
           nullable: true
